@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use instant_smtp::parse::command::command;
+use instant_smtp::types::Command;
 
 fn main() -> std::io::Result<()> {
     let mut args = std::env::args();
@@ -8,7 +8,7 @@ fn main() -> std::io::Result<()> {
     if let Some(path) = args.nth(1) {
         let data = std::fs::read(path).unwrap();
 
-        match command(&data) {
+        match Command::from_bytes(&data) {
             Ok((remaining, command)) => {
                 println!("[!] {:#?}", command);
                 let serialized = {
@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
             break;
         }
 
-        match command(line.as_bytes()) {
+        match Command::from_bytes(line.as_bytes()) {
             Ok((remaining, command)) => {
                 println!("[!] {:#?}", command);
                 let serialized = {

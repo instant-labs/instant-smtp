@@ -1,5 +1,6 @@
 use std::{borrow::Cow, fmt, io::Write, ops::Deref};
 
+use nom::IResult;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -93,6 +94,12 @@ pub enum Command {
     AuthLogin(Option<String>),
     // AUTH PLAIN
     AuthPlain(Option<String>),
+}
+
+impl Command {
+    pub fn from_bytes(input: &[u8]) -> IResult<&[u8], Self> {
+        crate::parse::command::command(input)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -308,6 +315,10 @@ pub enum Response {
 }
 
 impl Response {
+    pub fn parse_greeting(input: &[u8]) -> IResult<&[u8], Self> {
+        crate::parse::response::Greeting(input)
+    }
+
     pub fn greeting<D, T>(domain: D, text: T) -> Response
     where
         D: Into<String>,
@@ -317,6 +328,14 @@ impl Response {
             domain: domain.into(),
             text: text.into(),
         }
+    }
+
+    pub fn parse_ehlo(input: &[u8]) -> IResult<&[u8], Self> {
+        crate::parse::response::ehlo_ok_rsp(input)
+    }
+
+    pub fn parse_other(input: &[u8]) -> IResult<&[u8], Self> {
+        crate::parse::response::Reply_lines(input)
     }
 
     pub fn ehlo<D, G>(domain: D, greet: Option<G>, capabilities: Vec<Capability>) -> Response

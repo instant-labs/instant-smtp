@@ -13,13 +13,11 @@ use nom::{
     IResult,
 };
 
-use crate::{parse::imf::atom::is_atext, types::AtomOrQuoted};
+use crate::types::AtomOrQuoted;
 
 pub mod address;
 pub mod command;
-pub mod imf;
 pub mod response;
-pub mod trace;
 
 pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
     let mut parser = map_res(
@@ -56,6 +54,26 @@ pub fn String(input: &[u8]) -> IResult<&[u8], AtomOrQuoted> {
 /// Atom = 1*atext
 pub fn Atom(input: &[u8]) -> IResult<&[u8], &str> {
     map_res(take_while1(is_atext), std::str::from_utf8)(input)
+}
+
+/// Printable US-ASCII characters not including specials.
+/// Used for atoms.
+///
+/// atext = ALPHA / DIGIT /
+///          "!" / "#" /
+///          "$" / "%" /
+///          "&" / "'" /
+///          "*" / "+" /
+///          "-" / "/" /
+///          "=" / "?" /
+///          "^" / "_" /
+///          "`" / "{" /
+///          "|" / "}" /
+///          "~"
+pub fn is_atext(byte: u8) -> bool {
+    let allowed = b"!#$%&'*+-/=?^_`{|}~";
+
+    is_alphabetic(byte) || is_digit(byte) || allowed.contains(&byte)
 }
 
 /// Quoted-string = DQUOTE *QcontentSMTP DQUOTE
