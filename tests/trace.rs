@@ -1,4 +1,4 @@
-use instant_smtp::types::{Command, Response};
+use instant_smtp::{Command, Response};
 use nom::FindSubstring;
 
 fn parse_trace(mut trace: &[u8]) {

@@ -10,7 +10,7 @@ use nom::{
 
 use crate::{
     parse::{address::address_literal, atom, base64, domain, quoted_string, string},
-    types::{Command, DomainOrAddress, Parameter},
+    {Command, DomainOrAddress, Parameter},
 };
 
 pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
@@ -373,7 +373,7 @@ pub fn dot_string(input: &[u8]) -> IResult<&[u8], &str> {
 #[cfg(test)]
 mod test {
     use super::{ehlo, helo, mail, Parameter};
-    use crate::types::{Command, DomainOrAddress};
+    use crate::{Command, DomainOrAddress};
 
     #[test]
     fn test_ehlo() {

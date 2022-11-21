@@ -11,7 +11,7 @@ use nom::{
     IResult,
 };
 
-use crate::types::AtomOrQuoted;
+use super::AtomOrQuoted;
 
 pub mod address;
 pub mod command;
