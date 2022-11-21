@@ -20,7 +20,6 @@ pub mod command;
 pub mod imf;
 pub mod response;
 pub mod trace;
-pub mod utils;
 
 pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
     let mut parser = map_res(
