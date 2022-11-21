@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smtp_codec::parse::command::command;
+use instant_smtp::parse::command::command;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok((_, cmd)) = command(data) {

@@ -1,14 +1,11 @@
 [package]
-name = "smtp-codec"
-description = "Low-level SMTP Parser and Serializer"
+name = "instant-smtp"
+description = "Low-level sans-I/O SMTP protocol implementation"
 keywords = ["email", "smtp", "parser", "codec"]
-version = "0.2.0"
-authors = ["Damian Poddebniak <poddebniak@mailbox.org>"]
-repository = "https://github.com/duesee/smtp-codec"
+version = "0.1.0"
+repository = "https://github.com/InstantDomain/instant-smtp"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = []
