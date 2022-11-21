@@ -12,7 +12,7 @@ use nom::{
 
 use crate::{
     parse::{address::address_literal, domain, number},
-    types::{AuthMechanism, Capability, ReplyCode, Response, TextString},
+    {AuthMechanism, Capability, ReplyCode, Response, TextString},
 };
 
 /// Greeting = ( "220 " (Domain / address-literal) [ SP textstring ] CRLF ) /
@@ -302,7 +302,7 @@ pub fn auth_mechanism(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::types::AuthMechanism;
+    use crate::AuthMechanism;
 
     #[test]
     fn test_greeting() {

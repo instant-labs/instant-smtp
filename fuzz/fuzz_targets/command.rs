@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use instant_smtp::types::Command;
+use instant_smtp::Command;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok((_, cmd)) = Command::from_bytes(data) {

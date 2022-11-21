@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use instant_smtp::types::Command;
+use instant_smtp::Command;
 
 fn main() -> std::io::Result<()> {
     let mut args = std::env::args();
