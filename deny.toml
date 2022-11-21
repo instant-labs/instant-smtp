@@ -1,9 +1,8 @@
-[bans]
-multiple-versions = "deny"
-
-[sources]
-unknown-registry = "deny"
-unknown-git      = "deny"
+[advisories]
+unsound = "deny"
+yanked = "deny"
+unmaintained = "deny"
 
 [licenses]
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016" ]
+allow-osi-fsf-free = "either"
+copyleft = "deny"
