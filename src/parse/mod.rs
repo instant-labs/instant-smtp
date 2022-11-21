@@ -13,7 +13,7 @@ use nom::{
     IResult,
 };
 
-use crate::{parse::imf::atom::is_atext, types::AtomOrQuoted, utils::unescape_quoted};
+use crate::{parse::imf::atom::is_atext, types::AtomOrQuoted};
 
 pub mod address;
 pub mod command;
@@ -149,6 +149,34 @@ pub fn Ldh_str(input: &[u8]) -> IResult<&[u8], &[u8]> {
 }
 
 // -------------------------------------------------------------------------------------------------
+
+pub(crate) fn escape_quoted(unescaped: &str) -> Cow<str> {
+    let mut escaped = Cow::Borrowed(unescaped);
+
+    if escaped.contains('\\') {
+        escaped = Cow::Owned(escaped.replace('\\', "\\\\"));
+    }
+
+    if escaped.contains('\"') {
+        escaped = Cow::Owned(escaped.replace('\"', "\\\""));
+    }
+
+    escaped
+}
+
+pub(crate) fn unescape_quoted(escaped: &str) -> Cow<str> {
+    let mut unescaped = Cow::Borrowed(escaped);
+
+    if unescaped.contains("\\\\") {
+        unescaped = Cow::Owned(unescaped.replace("\\\\", "\\"));
+    }
+
+    if unescaped.contains("\\\"") {
+        unescaped = Cow::Owned(unescaped.replace("\\\"", "\""));
+    }
+
+    unescaped
+}
 
 #[cfg(test)]
 pub mod test {
