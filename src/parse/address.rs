@@ -1,10 +1,9 @@
 //! 4.1.3.  Address Literals (RFC 5321)
 
-use abnf_core::streaming::is_DIGIT;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while1, take_while_m_n},
-    character::is_hex_digit,
+    character::{is_digit, is_hex_digit},
     combinator::{map_res, opt, recognize},
     multi::{count, many_m_n},
     sequence::{delimited, tuple},
@@ -47,7 +46,7 @@ pub fn IPv4_address_literal(input: &[u8]) -> IResult<&[u8], &[u8]> {
 ///
 /// Snum = 1*3DIGIT
 pub fn Snum(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    take_while_m_n(1, 3, is_DIGIT)(input)
+    take_while_m_n(1, 3, is_digit)(input)
 }
 
 /// IPv6-address-literal = "IPv6:" IPv6-addr

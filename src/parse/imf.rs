@@ -4,7 +4,6 @@
 
 /// 3.2.1.  Quoted characters
 pub mod quoted_characters {
-    use abnf_core::streaming::{is_VCHAR, WSP};
     use nom::{
         branch::alt,
         bytes::streaming::{tag, take_while_m_n},
@@ -20,7 +19,10 @@ pub mod quoted_characters {
         let parser = alt((
             recognize(tuple((
                 tag(b"\\"),
-                alt((take_while_m_n(1, 1, is_VCHAR), WSP)),
+                alt((
+                    take_while_m_n(1, 1, |byte| matches!(byte, 0x21..=0x7E)),
+                    alt((tag(" "), tag("\t"))),
+                )),
             ))),
             obs_qp,
         ));
@@ -58,9 +60,9 @@ pub mod folding_ws_and_comment {
 
 /// 3.2.3.  Atom
 pub mod atom {
-    use abnf_core::streaming::{is_ALPHA, is_DIGIT};
     use nom::{
         bytes::streaming::{tag, take_while1},
+        character::{is_alphabetic, is_digit},
         combinator::{opt, recognize},
         multi::many0,
         sequence::tuple,
@@ -86,7 +88,7 @@ pub mod atom {
     pub fn is_atext(byte: u8) -> bool {
         let allowed = b"!#$%&'*+-/=?^_`{|}~";
 
-        is_ALPHA(byte) || is_DIGIT(byte) || allowed.contains(&byte)
+        is_alphabetic(byte) || is_digit(byte) || allowed.contains(&byte)
     }
 
     /// atom = [CFWS] 1*atext [CFWS]
@@ -133,10 +135,9 @@ pub mod atom {
 
 /// 3.2.4.  Quoted Strings
 pub mod quoted_strings {
-    use abnf_core::streaming::DQUOTE;
     use nom::{
         branch::alt,
-        bytes::streaming::take_while_m_n,
+        bytes::streaming::{tag, take_while_m_n},
         combinator::{opt, recognize},
         multi::many0,
         sequence::tuple,
@@ -173,10 +174,10 @@ pub mod quoted_strings {
     pub fn quoted_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
         let parser = tuple((
             opt(CFWS),
-            DQUOTE,
+            tag("\""),
             many0(tuple((opt(FWS), qcontent))),
             opt(FWS),
-            DQUOTE,
+            tag("\""),
             opt(CFWS),
         ));
 
@@ -206,10 +207,10 @@ pub mod miscellaneous {
 
 /// 3.3.  Date and Time Specification
 pub mod datetime {
-    use abnf_core::streaming::is_DIGIT;
     use nom::{
         branch::alt,
         bytes::streaming::{tag, tag_no_case, take_while_m_n},
+        character::is_digit,
         combinator::{opt, recognize},
         sequence::tuple,
         IResult,
@@ -263,7 +264,7 @@ pub mod datetime {
 
     // day = ([FWS] 1*2DIGIT FWS) / obs-day
     pub fn day(input: &[u8]) -> IResult<&[u8], &[u8]> {
-        let parser = tuple((opt(FWS), take_while_m_n(1, 2, is_DIGIT), FWS));
+        let parser = tuple((opt(FWS), take_while_m_n(1, 2, is_digit), FWS));
 
         let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -294,7 +295,7 @@ pub mod datetime {
 
     // year = (FWS 4*DIGIT FWS) / obs-year
     pub fn year(input: &[u8]) -> IResult<&[u8], &[u8]> {
-        let parser = tuple((FWS, take_while_m_n(4, 8, is_DIGIT), FWS)); // FIXME: 4*?!
+        let parser = tuple((FWS, take_while_m_n(4, 8, is_digit), FWS)); // FIXME: 4*?!
 
         let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -323,7 +324,7 @@ pub mod datetime {
     pub fn hour(input: &[u8]) -> IResult<&[u8], &[u8]> {
         // FIXME: obs- forms must not be used in SMTP. Never?
 
-        let parser = take_while_m_n(2, 2, is_DIGIT);
+        let parser = take_while_m_n(2, 2, is_digit);
 
         let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -334,7 +335,7 @@ pub mod datetime {
     pub fn minute(input: &[u8]) -> IResult<&[u8], &[u8]> {
         // FIXME: obs- forms must not be used in SMTP. Never?
 
-        let parser = take_while_m_n(2, 2, is_DIGIT);
+        let parser = take_while_m_n(2, 2, is_digit);
 
         let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -345,7 +346,7 @@ pub mod datetime {
     pub fn second(input: &[u8]) -> IResult<&[u8], &[u8]> {
         // FIXME: obs- forms must not be used in SMTP. Never?
 
-        let parser = take_while_m_n(2, 2, is_DIGIT);
+        let parser = take_while_m_n(2, 2, is_digit);
 
         let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -359,7 +360,7 @@ pub mod datetime {
         let parser = tuple((
             FWS,
             alt((tag(b"+"), tag(b"-"))),
-            take_while_m_n(4, 4, is_DIGIT),
+            take_while_m_n(4, 4, is_digit),
         ));
 
         let (remaining, parsed) = recognize(parser)(input)?;
@@ -520,7 +521,6 @@ pub mod identification {
 
 /// 4.1.  Miscellaneous Obsolete Tokens
 pub mod obsolete {
-    use abnf_core::streaming::{CR, LF};
     use nom::{
         branch::alt,
         bytes::streaming::{tag, take_while_m_n},
@@ -557,8 +557,8 @@ pub mod obsolete {
             alt((
                 take_while_m_n(1, 1, |x| x == 0x00),
                 take_while_m_n(1, 1, is_obs_NO_WS_CTL),
-                LF,
-                CR,
+                tag("\n"),
+                tag("\r"),
             )),
         ));
 

@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use abnf_core::streaming::{is_ALPHA, is_DIGIT, CRLF, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while, take_while1, take_while_m_n},
+    character::{is_alphabetic, is_digit},
     combinator::{map, map_res, opt, recognize, value},
     multi::{many0, separated_list0},
     sequence::{delimited, preceded, tuple},
@@ -25,8 +25,8 @@ pub fn Greeting(input: &[u8]) -> IResult<&[u8], Response> {
             tuple((
                 tag(b"220 "),
                 alt((Domain, address_literal)),
-                opt(preceded(SP, textstring)),
-                CRLF,
+                opt(preceded(tag(" "), textstring)),
+                tag("\r\n"),
             )),
             |(_, domain, maybe_text, _)| Response::Greeting {
                 domain: domain.to_owned(),
@@ -39,12 +39,12 @@ pub fn Greeting(input: &[u8]) -> IResult<&[u8], Response> {
             tuple((
                 tag(b"220-"),
                 alt((Domain, address_literal)),
-                opt(preceded(SP, textstring)),
-                CRLF,
-                many0(delimited(tag(b"220-"), opt(textstring), CRLF)),
+                opt(preceded(tag(" "), textstring)),
+                tag("\r\n"),
+                many0(delimited(tag(b"220-"), opt(textstring), tag("\r\n"))),
                 tag(b"220"),
-                opt(preceded(SP, textstring)),
-                CRLF,
+                opt(preceded(tag(" "), textstring)),
+                tag("\r\n"),
             )),
             |(_, domain, maybe_text, _, more_text, _, moar_text, _)| Response::Greeting {
                 domain: domain.to_owned(),
@@ -76,7 +76,7 @@ pub fn Greeting(input: &[u8]) -> IResult<&[u8], Response> {
     Ok((remaining, parsed))
 }
 
-/// HT, SP, Printable US-ASCII
+/// HT, tag(" "), Printable US-ASCII
 ///
 /// textstring = 1*(%d09 / %d32-126)
 pub fn textstring(input: &[u8]) -> IResult<&[u8], TextString<'_>> {
@@ -97,10 +97,10 @@ pub(crate) fn is_text_string_byte(byte: u8) -> bool {
 pub fn Reply_lines(input: &[u8]) -> IResult<&[u8], Response> {
     let mut parser = map(
         tuple((
-            many0(tuple((Reply_code, tag(b"-"), opt(textstring), CRLF))),
+            many0(tuple((Reply_code, tag(b"-"), opt(textstring), tag("\r\n")))),
             Reply_code,
-            opt(tuple((SP, textstring))),
-            CRLF,
+            opt(tuple((tag(" "), textstring))),
+            tag("\r\n"),
         )),
         |(intermediate, code, text, _)| {
             let mut lines =
@@ -151,7 +151,12 @@ pub fn Reply_code(input: &[u8]) -> IResult<&[u8], ReplyCode> {
 pub fn ehlo_ok_rsp(input: &[u8]) -> IResult<&[u8], Response> {
     let mut parser = alt((
         map(
-            tuple((tag(b"250 "), Domain, opt(preceded(SP, ehlo_greet)), CRLF)),
+            tuple((
+                tag(b"250 "),
+                Domain,
+                opt(preceded(tag(" "), ehlo_greet)),
+                tag("\r\n"),
+            )),
             |(_, domain, maybe_ehlo, _)| Response::Ehlo {
                 domain: domain.to_owned(),
                 greet: maybe_ehlo.map(|ehlo| ehlo.to_owned()),
@@ -162,12 +167,12 @@ pub fn ehlo_ok_rsp(input: &[u8]) -> IResult<&[u8], Response> {
             tuple((
                 tag(b"250-"),
                 Domain,
-                opt(preceded(SP, ehlo_greet)),
-                CRLF,
-                many0(delimited(tag(b"250-"), ehlo_line, CRLF)),
+                opt(preceded(tag(" "), ehlo_greet)),
+                tag("\r\n"),
+                many0(delimited(tag(b"250-"), ehlo_line, tag("\r\n"))),
                 tag(b"250 "),
                 ehlo_line,
-                CRLF,
+                tag("\r\n"),
             )),
             |(_, domain, maybe_ehlo, _, mut lines, _, line, _)| Response::Ehlo {
                 domain: domain.to_owned(),
@@ -203,14 +208,14 @@ pub fn ehlo_line(input: &[u8]) -> IResult<&[u8], Capability> {
     let auth = tuple((
         tag_no_case("AUTH"),
         alt((tag_no_case(" "), tag_no_case("="))),
-        separated_list0(SP, auth_mechanism),
+        separated_list0(tag(" "), auth_mechanism),
     ));
 
     let other = tuple((
         map_res(ehlo_keyword, std::str::from_utf8),
         opt(preceded(
-            alt((SP, tag("="))), // TODO: For Outlook?
-            separated_list0(SP, ehlo_param),
+            alt((tag(" "), tag("="))), // TODO: For Outlook?
+            separated_list0(tag(" "), ehlo_param),
         )),
     ));
 
@@ -257,8 +262,8 @@ pub fn ehlo_line(input: &[u8]) -> IResult<&[u8], Capability> {
 /// ehlo-keyword = (ALPHA / DIGIT) *(ALPHA / DIGIT / "-")
 pub fn ehlo_keyword(input: &[u8]) -> IResult<&[u8], &[u8]> {
     let parser = tuple((
-        take_while_m_n(1, 1, |byte| is_ALPHA(byte) || is_DIGIT(byte)),
-        take_while(|byte| is_ALPHA(byte) || is_DIGIT(byte) || byte == b'-'),
+        take_while_m_n(1, 1, |byte| is_alphabetic(byte) || is_digit(byte)),
+        take_while(|byte| is_alphabetic(byte) || is_digit(byte) || byte == b'-'),
     ));
 
     let (remaining, parsed) = recognize(parser)(input)?;

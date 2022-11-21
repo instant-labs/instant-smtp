@@ -1,5 +1,4 @@
 /// 4.4.  Trace Information (RFC 5321)
-use abnf_core::streaming::CRLF;
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case},
@@ -22,7 +21,7 @@ use crate::parse::{
 
 /// Return-path-line = "Return-Path:" FWS Reverse-path <CRLF>
 pub fn Return_path_line(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = tuple((tag_no_case(b"Return-Path:"), FWS, Reverse_path, CRLF));
+    let parser = tuple((tag_no_case(b"Return-Path:"), FWS, Reverse_path, tag("\r\n")));
 
     let (remaining, parsed) = recognize(parser)(input)?;
 
@@ -31,7 +30,7 @@ pub fn Return_path_line(input: &[u8]) -> IResult<&[u8], &[u8]> {
 
 /// Time-stamp-line = "Received:" FWS Stamp <CRLF>
 pub fn Time_stamp_line(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    let parser = tuple((tag_no_case(b"Received:"), FWS, Stamp, CRLF));
+    let parser = tuple((tag_no_case(b"Received:"), FWS, Stamp, tag("\r\n")));
 
     let (remaining, parsed) = recognize(parser)(input)?;
 

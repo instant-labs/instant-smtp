@@ -1,7 +1,7 @@
-use abnf_core::streaming::{is_ALPHA, is_DIGIT, CRLF, SP};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, tag_no_case, take_while, take_while1, take_while_m_n},
+    character::{is_alphabetic, is_digit},
     combinator::{map, map_res, opt, recognize, value},
     multi::separated_list1,
     sequence::{delimited, preceded, tuple},
@@ -22,18 +22,18 @@ pub fn command(input: &[u8]) -> IResult<&[u8], Command> {
     ))(input)
 }
 
-/// helo = "HELO" SP Domain CRLF
+/// helo = "HELO" tag(" ") Domain CRLF
 pub fn helo(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"HELO"),
-        SP,
+        tag(" "),
         alt((
             map(Domain, |domain| DomainOrAddress::Domain(domain.into())),
             map(address_literal, |address| {
                 DomainOrAddress::Address(address.into())
             }),
         )),
-        CRLF,
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, domain_or_address, _)) = parser(input)?;
@@ -41,18 +41,18 @@ pub fn helo(input: &[u8]) -> IResult<&[u8], Command> {
     Ok((remaining, Command::Helo { domain_or_address }))
 }
 
-/// ehlo = "EHLO" SP ( Domain / address-literal ) CRLF
+/// ehlo = "EHLO" tag(" ") ( Domain / address-literal ) CRLF
 pub fn ehlo(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"EHLO"),
-        SP,
+        tag(" "),
         alt((
             map(Domain, |domain| DomainOrAddress::Domain(domain.into())),
             map(address_literal, |address| {
                 DomainOrAddress::Address(address.into())
             }),
         )),
-        CRLF,
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, domain_or_address, _)) = parser(input)?;
@@ -60,14 +60,14 @@ pub fn ehlo(input: &[u8]) -> IResult<&[u8], Command> {
     Ok((remaining, Command::Ehlo { domain_or_address }))
 }
 
-/// mail = "MAIL FROM:" Reverse-path [SP Mail-parameters] CRLF
+/// mail = "MAIL FROM:" Reverse-path [tag(" ") Mail-parameters] CRLF
 pub fn mail(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"MAIL FROM:"),
-        opt(SP), // Out-of-Spec, but Outlook does it ...
+        opt(tag(" ")), // Out-of-tag(" ")ec, but Outlook does it ...
         Reverse_path,
-        opt(preceded(SP, Mail_parameters)),
-        CRLF,
+        opt(preceded(tag(" "), Mail_parameters)),
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, data, maybe_params, _)) = parser(input)?;
@@ -81,9 +81,9 @@ pub fn mail(input: &[u8]) -> IResult<&[u8], Command> {
     ))
 }
 
-/// Mail-parameters = esmtp-param *(SP esmtp-param)
+/// Mail-parameters = esmtp-param *(tag(" ") esmtp-param)
 pub fn Mail_parameters(input: &[u8]) -> IResult<&[u8], Vec<Parameter>> {
-    separated_list1(SP, esmtp_param)(input)
+    separated_list1(tag(" "), esmtp_param)(input)
 }
 
 /// esmtp-param = esmtp-keyword ["=" esmtp-value]
@@ -105,8 +105,8 @@ pub fn esmtp_param(input: &[u8]) -> IResult<&[u8], Parameter> {
 /// esmtp-keyword = (ALPHA / DIGIT) *(ALPHA / DIGIT / "-")
 pub fn esmtp_keyword(input: &[u8]) -> IResult<&[u8], &str> {
     let parser = tuple((
-        take_while_m_n(1, 1, |byte| is_ALPHA(byte) || is_DIGIT(byte)),
-        take_while(|byte| is_ALPHA(byte) || is_DIGIT(byte) || byte == b'-'),
+        take_while_m_n(1, 1, |byte| is_alphabetic(byte) || is_digit(byte)),
+        take_while(|byte| is_alphabetic(byte) || is_digit(byte) || byte == b'-'),
     ));
 
     let (remaining, parsed) = map_res(recognize(parser), std::str::from_utf8)(input)?;
@@ -114,7 +114,7 @@ pub fn esmtp_keyword(input: &[u8]) -> IResult<&[u8], &str> {
     Ok((remaining, parsed))
 }
 
-/// Any CHAR excluding "=", SP, and control characters.
+/// Any CHAR excluding "=", tag(" "), and control characters.
 /// If this string is an email address, i.e., a Mailbox,
 /// then the "xtext" syntax [32] SHOULD be used.
 ///
@@ -127,7 +127,7 @@ pub fn esmtp_value(input: &[u8]) -> IResult<&[u8], &str> {
     map_res(take_while1(is_value_character), std::str::from_utf8)(input)
 }
 
-/// rcpt = "RCPT TO:" ( "<Postmaster@" Domain ">" / "<Postmaster>" / Forward-path ) [SP Rcpt-parameters] CRLF
+/// rcpt = "RCPT TO:" ( "<Postmaster@" Domain ">" / "<Postmaster>" / Forward-path ) [tag(" ") Rcpt-parameters] CRLF
 ///
 /// Note that, in a departure from the usual rules for
 /// local-parts, the "Postmaster" string shown above is
@@ -135,7 +135,7 @@ pub fn esmtp_value(input: &[u8]) -> IResult<&[u8], &str> {
 pub fn rcpt(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"RCPT TO:"),
-        opt(SP), // Out-of-Spec, but Outlook does it ...
+        opt(tag(" ")), // Out-of-tag(" ")ec, but Outlook does it ...
         alt((
             map_res(
                 recognize(tuple((tag_no_case("<Postmaster@"), Domain, tag(">")))),
@@ -144,8 +144,8 @@ pub fn rcpt(input: &[u8]) -> IResult<&[u8], Command> {
             map_res(tag_no_case("<Postmaster>"), std::str::from_utf8),
             Forward_path,
         )),
-        opt(preceded(SP, Rcpt_parameters)),
-        CRLF,
+        opt(preceded(tag(" "), Rcpt_parameters)),
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, data, maybe_params, _)) = parser(input)?;
@@ -159,24 +159,24 @@ pub fn rcpt(input: &[u8]) -> IResult<&[u8], Command> {
     ))
 }
 
-/// Rcpt-parameters = esmtp-param *(SP esmtp-param)
+/// Rcpt-parameters = esmtp-param *(tag(" ") esmtp-param)
 pub fn Rcpt_parameters(input: &[u8]) -> IResult<&[u8], Vec<Parameter>> {
-    separated_list1(SP, esmtp_param)(input)
+    separated_list1(tag(" "), esmtp_param)(input)
 }
 
 /// data = "DATA" CRLF
 pub fn data(input: &[u8]) -> IResult<&[u8], Command> {
-    value(Command::Data, tuple((tag_no_case(b"DATA"), CRLF)))(input)
+    value(Command::Data, tuple((tag_no_case(b"DATA"), tag("\r\n"))))(input)
 }
 
 /// rset = "RSET" CRLF
 pub fn rset(input: &[u8]) -> IResult<&[u8], Command> {
-    value(Command::Rset, tuple((tag_no_case(b"RSET"), CRLF)))(input)
+    value(Command::Rset, tuple((tag_no_case(b"RSET"), tag("\r\n"))))(input)
 }
 
-/// vrfy = "VRFY" SP String CRLF
+/// vrfy = "VRFY" tag(" ") String CRLF
 pub fn vrfy(input: &[u8]) -> IResult<&[u8], Command> {
-    let mut parser = tuple((tag_no_case(b"VRFY"), SP, String, CRLF));
+    let mut parser = tuple((tag_no_case(b"VRFY"), tag(" "), String, tag("\r\n")));
 
     let (remaining, (_, _, data, _)) = parser(input)?;
 
@@ -188,18 +188,22 @@ pub fn vrfy(input: &[u8]) -> IResult<&[u8], Command> {
     ))
 }
 
-/// expn = "EXPN" SP String CRLF
+/// expn = "EXPN" tag(" ") String CRLF
 pub fn expn(input: &[u8]) -> IResult<&[u8], Command> {
-    let mut parser = tuple((tag_no_case(b"EXPN"), SP, String, CRLF));
+    let mut parser = tuple((tag_no_case(b"EXPN"), tag(" "), String, tag("\r\n")));
 
     let (remaining, (_, _, data, _)) = parser(input)?;
 
     Ok((remaining, Command::Expn { mailing_list: data }))
 }
 
-/// help = "HELP" [ SP String ] CRLF
+/// help = "HELP" [ tag(" ") String ] CRLF
 pub fn help(input: &[u8]) -> IResult<&[u8], Command> {
-    let mut parser = tuple((tag_no_case(b"HELP"), opt(preceded(SP, String)), CRLF));
+    let mut parser = tuple((
+        tag_no_case(b"HELP"),
+        opt(preceded(tag(" "), String)),
+        tag("\r\n"),
+    ));
 
     let (remaining, (_, maybe_data, _)) = parser(input)?;
 
@@ -211,9 +215,13 @@ pub fn help(input: &[u8]) -> IResult<&[u8], Command> {
     ))
 }
 
-/// noop = "NOOP" [ SP String ] CRLF
+/// noop = "NOOP" [ tag(" ") String ] CRLF
 pub fn noop(input: &[u8]) -> IResult<&[u8], Command> {
-    let mut parser = tuple((tag_no_case(b"NOOP"), opt(preceded(SP, String)), CRLF));
+    let mut parser = tuple((
+        tag_no_case(b"NOOP"),
+        opt(preceded(tag(" "), String)),
+        tag("\r\n"),
+    ));
 
     let (remaining, (_, maybe_data, _)) = parser(input)?;
 
@@ -227,11 +235,14 @@ pub fn noop(input: &[u8]) -> IResult<&[u8], Command> {
 
 /// quit = "QUIT" CRLF
 pub fn quit(input: &[u8]) -> IResult<&[u8], Command> {
-    value(Command::Quit, tuple((tag_no_case(b"QUIT"), CRLF)))(input)
+    value(Command::Quit, tuple((tag_no_case(b"QUIT"), tag("\r\n"))))(input)
 }
 
 pub fn starttls(input: &[u8]) -> IResult<&[u8], Command> {
-    value(Command::StartTLS, tuple((tag_no_case(b"STARTTLS"), CRLF)))(input)
+    value(
+        Command::StartTLS,
+        tuple((tag_no_case(b"STARTTLS"), tag("\r\n"))),
+    )(input)
 }
 
 /// https://interoperability.blob.core.windows.net/files/MS-XLOGIN/[MS-XLOGIN].pdf
@@ -239,19 +250,19 @@ pub fn starttls(input: &[u8]) -> IResult<&[u8], Command> {
 /// username = 1*CHAR ; Base64-encoded username
 /// password = 1*CHAR ; Base64-encoded password
 ///
-/// auth_login_command = "AUTH LOGIN" [SP username] CRLF
+/// auth_login_command = "AUTH LOGIN" [tag(" ") username] CRLF
 ///
 /// auth_login_username_challenge = "334 VXNlcm5hbWU6" CRLF
-/// auth_login_username_response  = username CRLF
+/// auth_login_username_retag(" ")onse  = username CRLF
 /// auth_login_password_challenge = "334 UGFzc3dvcmQ6" CRLF
-/// auth_login_password_response  = password CRLF
+/// auth_login_password_retag(" ")onse  = password CRLF
 pub fn auth_login(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"AUTH"),
-        SP,
+        tag(" "),
         tag_no_case("LOGIN"),
-        opt(preceded(SP, base64)),
-        CRLF,
+        opt(preceded(tag(" "), base64)),
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, _, maybe_username_b64, _)) = parser(input)?;
@@ -265,10 +276,10 @@ pub fn auth_login(input: &[u8]) -> IResult<&[u8], Command> {
 pub fn auth_plain(input: &[u8]) -> IResult<&[u8], Command> {
     let mut parser = tuple((
         tag_no_case(b"AUTH"),
-        SP,
+        tag(" "),
         tag_no_case("PLAIN"),
-        opt(preceded(SP, base64)),
-        CRLF,
+        opt(preceded(tag(" "), base64)),
+        tag("\r\n"),
     ));
 
     let (remaining, (_, _, _, maybe_credentials_b64, _)) = parser(input)?;

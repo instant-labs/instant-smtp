@@ -2,11 +2,11 @@
 
 use std::{borrow::Cow, str::from_utf8};
 
-use abnf_core::streaming::{is_ALPHA, is_DIGIT, DQUOTE};
 use nom::{
     branch::alt,
     bytes::streaming::{tag, take_while, take_while1, take_while_m_n},
     character::streaming::digit1,
+    character::{is_alphabetic, is_digit},
     combinator::{map, map_res, opt, recognize},
     multi::{many0, separated_list1},
     sequence::{delimited, tuple},
@@ -37,7 +37,7 @@ pub fn base64(input: &[u8]) -> IResult<&[u8], &str> {
 }
 
 fn is_base64_char(i: u8) -> bool {
-    is_ALPHA(i) || is_DIGIT(i) || i == b'+' || i == b'/'
+    is_alphabetic(i) || is_digit(i) || i == b'+' || i == b'/'
 }
 
 pub fn number(input: &[u8]) -> IResult<&[u8], u32> {
@@ -63,9 +63,9 @@ pub fn Atom(input: &[u8]) -> IResult<&[u8], &str> {
 pub fn Quoted_string(input: &[u8]) -> IResult<&[u8], Cow<'_, str>> {
     map(
         delimited(
-            DQUOTE,
+            tag("\""),
             map_res(recognize(many0(QcontentSMTP)), std::str::from_utf8),
-            DQUOTE,
+            tag("\""),
         ),
         unescape_quoted,
     )(input)
@@ -132,14 +132,14 @@ pub fn sub_domain(input: &[u8]) -> IResult<&[u8], &[u8]> {
 
 /// Let-dig = ALPHA / DIGIT
 pub fn is_Let_dig(byte: u8) -> bool {
-    is_ALPHA(byte) || is_DIGIT(byte)
+    is_alphabetic(byte) || is_digit(byte)
 }
 
 /// Ldh-str = *( ALPHA / DIGIT / "-" ) Let-dig
 pub fn Ldh_str(input: &[u8]) -> IResult<&[u8], &[u8]> {
     let parser = many0(alt((
-        take_while_m_n(1, 1, is_ALPHA),
-        take_while_m_n(1, 1, is_DIGIT),
+        take_while_m_n(1, 1, is_alphabetic),
+        take_while_m_n(1, 1, is_digit),
         recognize(tuple((tag(b"-"), take_while_m_n(1, 1, is_Let_dig)))),
     )));
 
