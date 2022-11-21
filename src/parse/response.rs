@@ -103,8 +103,7 @@ pub fn reply_lines(input: &[u8]) -> IResult<&[u8], Response> {
             tag("\r\n"),
         )),
         |(intermediate, code, text, _)| {
-            let mut lines =
-                Vec::with_capacity(intermediate.len() + if text.is_some() { 1 } else { 0 });
+            let mut lines = Vec::with_capacity(intermediate.len() + usize::from(text.is_some()));
             for (_, _, text, _) in intermediate {
                 if let Some(line) = text {
                     lines.push(line.into_owned());
