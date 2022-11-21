@@ -11,7 +11,7 @@ use nom::{
 };
 
 use crate::{
-    parse::{address::address_literal, number, Domain},
+    parse::{address::address_literal, domain, number},
     types::{AuthMechanism, Capability, ReplyCode, Response, TextString},
 };
 
@@ -19,12 +19,12 @@ use crate::{
 ///            ( "220-" (Domain / address-literal) [ SP textstring ] CRLF
 ///           *( "220-" [ textstring ] CRLF )
 ///              "220" [ SP textstring ] CRLF )
-pub fn Greeting(input: &[u8]) -> IResult<&[u8], Response> {
+pub fn greeting(input: &[u8]) -> IResult<&[u8], Response> {
     let mut parser = alt((
         map(
             tuple((
                 tag(b"220 "),
-                alt((Domain, address_literal)),
+                alt((domain, address_literal)),
                 opt(preceded(tag(" "), textstring)),
                 tag("\r\n"),
             )),
@@ -38,7 +38,7 @@ pub fn Greeting(input: &[u8]) -> IResult<&[u8], Response> {
         map(
             tuple((
                 tag(b"220-"),
-                alt((Domain, address_literal)),
+                alt((domain, address_literal)),
                 opt(preceded(tag(" "), textstring)),
                 tag("\r\n"),
                 many0(delimited(tag(b"220-"), opt(textstring), tag("\r\n"))),
@@ -94,11 +94,11 @@ pub(crate) fn is_text_string_byte(byte: u8) -> bool {
 
 /// Reply-line = *( Reply-code "-" [ textstring ] CRLF )
 ///                 Reply-code [ SP textstring ] CRLF
-pub fn Reply_lines(input: &[u8]) -> IResult<&[u8], Response> {
+pub fn reply_lines(input: &[u8]) -> IResult<&[u8], Response> {
     let mut parser = map(
         tuple((
-            many0(tuple((Reply_code, tag(b"-"), opt(textstring), tag("\r\n")))),
-            Reply_code,
+            many0(tuple((reply_code, tag(b"-"), opt(textstring), tag("\r\n")))),
+            reply_code,
             opt(tuple((tag(" "), textstring))),
             tag("\r\n"),
         )),
@@ -129,7 +129,7 @@ pub fn Reply_lines(input: &[u8]) -> IResult<&[u8], Response> {
 ///   2345
 /// 012345
 /// 0123456789
-pub fn Reply_code(input: &[u8]) -> IResult<&[u8], ReplyCode> {
+pub fn reply_code(input: &[u8]) -> IResult<&[u8], ReplyCode> {
     // FIXME: do not accept all codes.
     map_res(
         map_res(
@@ -153,7 +153,7 @@ pub fn ehlo_ok_rsp(input: &[u8]) -> IResult<&[u8], Response> {
         map(
             tuple((
                 tag(b"250 "),
-                Domain,
+                domain,
                 opt(preceded(tag(" "), ehlo_greet)),
                 tag("\r\n"),
             )),
@@ -166,7 +166,7 @@ pub fn ehlo_ok_rsp(input: &[u8]) -> IResult<&[u8], Response> {
         map(
             tuple((
                 tag(b"250-"),
-                Domain,
+                domain,
                 opt(preceded(tag(" "), ehlo_greet)),
                 tag("\r\n"),
                 many0(delimited(tag(b"250-"), ehlo_line, tag("\r\n"))),
@@ -220,34 +220,34 @@ pub fn ehlo_line(input: &[u8]) -> IResult<&[u8], Capability> {
     ));
 
     alt((
-        value(Capability::EXPN, tag_no_case("EXPN")),
+        value(Capability::Expn, tag_no_case("EXPN")),
         value(Capability::Help, tag_no_case("HELP")),
-        value(Capability::EightBitMIME, tag_no_case("8BITMIME")),
+        value(Capability::EightBitMime, tag_no_case("8BITMIME")),
         map(preceded(tag_no_case("SIZE "), number), Capability::Size),
         value(Capability::Chunking, tag_no_case("CHUNKING")),
-        value(Capability::BinaryMIME, tag_no_case("BINARYMIME")),
+        value(Capability::BinaryMime, tag_no_case("BINARYMIME")),
         value(Capability::Checkpoint, tag_no_case("CHECKPOINT")),
         value(Capability::DeliverBy, tag_no_case("DELIVERBY")),
         value(Capability::Pipelining, tag_no_case("PIPELINING")),
-        value(Capability::DSN, tag_no_case("DSN")),
-        value(Capability::ETRN, tag_no_case("ETRN")),
+        value(Capability::Dsn, tag_no_case("DSN")),
+        value(Capability::Etrn, tag_no_case("ETRN")),
         value(
             Capability::EnhancedStatusCodes,
             tag_no_case("ENHANCEDSTATUSCODES"),
         ),
-        value(Capability::StartTLS, tag_no_case("STARTTLS")),
+        value(Capability::StartTls, tag_no_case("STARTTLS")),
         // FIXME: NO-SOLICITING
-        value(Capability::MTRK, tag_no_case("MTRK")),
-        value(Capability::ATRN, tag_no_case("ATRN")),
+        value(Capability::Mtrk, tag_no_case("MTRK")),
+        value(Capability::Atrn, tag_no_case("ATRN")),
         map(auth, |(_, _, mechanisms)| Capability::Auth(mechanisms)),
-        value(Capability::BURL, tag_no_case("BURL")),
+        value(Capability::Burl, tag_no_case("BURL")),
         // FIXME: FUTURERELEASE
         // FIXME: CONPERM
         // FIXME: CONNEG
-        value(Capability::SMTPUTF8, tag_no_case("SMTPUTF8")),
+        value(Capability::SmtpUtf8, tag_no_case("SMTPUTF8")),
         // FIXME: MT-PRIORITY
-        value(Capability::RRVS, tag_no_case("RRVS")),
-        value(Capability::RequireTLS, tag_no_case("REQUIRETLS")),
+        value(Capability::Rrvs, tag_no_case("RRVS")),
+        value(Capability::RequireTls, tag_no_case("REQUIRETLS")),
         map(other, |(keyword, params)| Capability::Other {
             keyword: keyword.into(),
             params: params
@@ -287,12 +287,12 @@ pub fn auth_mechanism(input: &[u8]) -> IResult<&[u8], AuthMechanism> {
     alt((
         value(AuthMechanism::Login, tag_no_case("LOGIN")),
         value(AuthMechanism::Plain, tag_no_case("PLAIN")),
-        value(AuthMechanism::CramMD5, tag_no_case("CRAM-MD5")),
-        value(AuthMechanism::CramSHA1, tag_no_case("CRAM-SHA1")),
-        value(AuthMechanism::DigestMD5, tag_no_case("DIGEST-MD5")),
-        value(AuthMechanism::ScramMD5, tag_no_case("SCRAM-MD5")),
-        value(AuthMechanism::GSSAPI, tag_no_case("GSSAPI")),
-        value(AuthMechanism::NTLM, tag_no_case("NTLM")),
+        value(AuthMechanism::CramMd5, tag_no_case("CRAM-MD5")),
+        value(AuthMechanism::CramSha1, tag_no_case("CRAM-SHA1")),
+        value(AuthMechanism::DigestMd5, tag_no_case("DIGEST-MD5")),
+        value(AuthMechanism::ScramMd5, tag_no_case("SCRAM-MD5")),
+        value(AuthMechanism::GssApi, tag_no_case("GSSAPI")),
+        value(AuthMechanism::Ntlm, tag_no_case("NTLM")),
         map(ehlo_param, |param| AuthMechanism::Other(param.to_string())),
     ))(input)
 }
@@ -305,12 +305,12 @@ mod test {
     use crate::types::AuthMechanism;
 
     #[test]
-    fn test_Greeting() {
-        let greeting = b"220-example.org ESMTP Fake 4.93 #2 Thu, 16 Jul 2020 07:30:16 -0400\r\n\
+    fn test_greeting() {
+        let buf = b"220-example.org ESMTP Fake 4.93 #2 Thu, 16 Jul 2020 07:30:16 -0400\r\n\
 220-We do not authorize the use of this system to transport unsolicited,\r\n\
 220 and/or bulk e-mail.\r\n";
 
-        let (rem, out) = Greeting(greeting).unwrap();
+        let (rem, out) = greeting(buf).unwrap();
         assert_eq!(rem, b"");
         assert_eq!(
             out,
@@ -344,17 +344,17 @@ and/or bulk e-mail."
                 capabilities: vec![
                     Capability::Auth(vec![
                         AuthMechanism::Login,
-                        AuthMechanism::CramMD5,
+                        AuthMechanism::CramMd5,
                         AuthMechanism::Plain
                     ]),
                     Capability::Auth(vec![
                         AuthMechanism::Login,
-                        AuthMechanism::CramMD5,
+                        AuthMechanism::CramMd5,
                         AuthMechanism::Plain
                     ]),
-                    Capability::StartTLS,
+                    Capability::StartTls,
                     Capability::Size(12345),
-                    Capability::EightBitMIME,
+                    Capability::EightBitMime,
                 ],
             }
         );

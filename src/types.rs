@@ -89,7 +89,7 @@ pub enum Command {
     /// mail transaction will be aborted.
     Quit,
     // Extensions
-    StartTLS,
+    StartTls,
     // AUTH LOGIN
     AuthLogin(Option<String>),
     // AUTH PLAIN
@@ -149,7 +149,7 @@ impl Command {
             Command::Noop { .. } => "NOOP",
             Command::Quit => "QUIT",
             // Extensions
-            Command::StartTLS => "STARTTLS",
+            Command::StartTls => "STARTTLS",
             // TODO: SMTP AUTH LOGIN
             Command::AuthLogin(_) => "AUTHLOGIN",
             // TODO: SMTP AUTH PLAIN
@@ -233,7 +233,7 @@ impl Command {
             Quit => writer.write_all(b"QUIT")?,
             // ----- Extensions -----
             // starttls = "STARTTLS" CRLF
-            StartTLS => writer.write_all(b"STARTTLS")?,
+            StartTls => writer.write_all(b"STARTTLS")?,
             // auth_login_command = "AUTH LOGIN" [SP username] CRLF
             AuthLogin(None) => {
                 writer.write_all(b"AUTH LOGIN")?;
@@ -316,7 +316,7 @@ pub enum Response {
 
 impl Response {
     pub fn parse_greeting(input: &[u8]) -> IResult<&[u8], Self> {
-        crate::parse::response::Greeting(input)
+        crate::parse::response::greeting(input)
     }
 
     pub fn greeting<D, T>(domain: D, text: T) -> Response
@@ -335,7 +335,7 @@ impl Response {
     }
 
     pub fn parse_other(input: &[u8]) -> IResult<&[u8], Self> {
-        crate::parse::response::Reply_lines(input)
+        crate::parse::response::reply_lines(input)
     }
 
     pub fn ehlo<D, G>(domain: D, greet: Option<G>, capabilities: Vec<Capability>) -> Response
@@ -465,13 +465,13 @@ pub enum Capability {
 
     /// Expand the mailing list [RFC821]
     /// Command description updated by [RFC5321]
-    EXPN,
+    Expn,
     /// Supply helpful information [RFC821]
     /// Command description updated by [RFC5321]
     Help,
 
     /// SMTP and Submit transport of 8bit MIME content [RFC6152]
-    EightBitMIME,
+    EightBitMime,
 
     /// Message size declaration [RFC1870]
     Size(u32),
@@ -480,7 +480,7 @@ pub enum Capability {
     Chunking,
 
     /// Binary MIME [RFC3030]
-    BinaryMIME,
+    BinaryMime,
 
     /// Checkpoint/Restart [RFC1845]
     Checkpoint,
@@ -492,34 +492,34 @@ pub enum Capability {
     Pipelining,
 
     /// Delivery Status Notification [RFC3461]
-    DSN,
+    Dsn,
 
     /// Extended Turn [RFC1985]
     /// SMTP [RFC5321] only. Not for use on Submit port 587.
-    ETRN,
+    Etrn,
 
     /// Enhanced Status Codes [RFC2034]
     EnhancedStatusCodes,
 
     /// Start TLS [RFC3207]
-    StartTLS,
+    StartTls,
 
     /// Notification of no soliciting [RFC3865]
     // NoSoliciting,
 
     /// Message Tracking [RFC3885]
-    MTRK,
+    Mtrk,
 
     /// Authenticated TURN [RFC2645]
     /// SMTP [RFC5321] only. Not for use on Submit port 587.
-    ATRN,
+    Atrn,
 
     /// Authentication [RFC4954]
     Auth(Vec<AuthMechanism>),
 
     /// Remote Content [RFC4468]
     /// Submit [RFC6409] only. Not for use with SMTP on port 25.
-    BURL,
+    Burl,
 
     /// Future Message Release [RFC4865]
     // FutureRelease,
@@ -531,16 +531,16 @@ pub enum Capability {
     // ConNeg,
 
     /// Internationalized email address [RFC6531]
-    SMTPUTF8,
+    SmtpUtf8,
 
     /// Priority Message Handling [RFC6710]
     // MTPRIORITY,
 
     /// Require Recipient Valid Since [RFC7293]
-    RRVS,
+    Rrvs,
 
     /// Require TLS [RFC8689]
-    RequireTLS,
+    RequireTls,
 
     // Observed ...
     // TIME,
@@ -557,21 +557,21 @@ pub enum Capability {
 impl Capability {
     pub fn serialize(&self, writer: &mut impl Write) -> std::io::Result<()> {
         match self {
-            Capability::EXPN => writer.write_all(b"EXPN"),
+            Capability::Expn => writer.write_all(b"EXPN"),
             Capability::Help => writer.write_all(b"HELP"),
-            Capability::EightBitMIME => writer.write_all(b"8BITMIME"),
+            Capability::EightBitMime => writer.write_all(b"8BITMIME"),
             Capability::Size(number) => writer.write_all(format!("SIZE {}", number).as_bytes()),
             Capability::Chunking => writer.write_all(b"CHUNKING"),
-            Capability::BinaryMIME => writer.write_all(b"BINARYMIME"),
+            Capability::BinaryMime => writer.write_all(b"BINARYMIME"),
             Capability::Checkpoint => writer.write_all(b"CHECKPOINT"),
             Capability::DeliverBy => writer.write_all(b"DELIVERBY"),
             Capability::Pipelining => writer.write_all(b"PIPELINING"),
-            Capability::DSN => writer.write_all(b"DSN"),
-            Capability::ETRN => writer.write_all(b"ETRN"),
+            Capability::Dsn => writer.write_all(b"DSN"),
+            Capability::Etrn => writer.write_all(b"ETRN"),
             Capability::EnhancedStatusCodes => writer.write_all(b"ENHANCEDSTATUSCODES"),
-            Capability::StartTLS => writer.write_all(b"STARTTLS"),
-            Capability::MTRK => writer.write_all(b"MTRK"),
-            Capability::ATRN => writer.write_all(b"ATRN"),
+            Capability::StartTls => writer.write_all(b"STARTTLS"),
+            Capability::Mtrk => writer.write_all(b"MTRK"),
+            Capability::Atrn => writer.write_all(b"ATRN"),
             Capability::Auth(mechanisms) => {
                 if let Some((tail, head)) = mechanisms.split_last() {
                     writer.write_all(b"AUTH ")?;
@@ -586,10 +586,10 @@ impl Capability {
                     writer.write_all(b"AUTH")
                 }
             }
-            Capability::BURL => writer.write_all(b"BURL"),
-            Capability::SMTPUTF8 => writer.write_all(b"SMTPUTF8"),
-            Capability::RRVS => writer.write_all(b"RRVS"),
-            Capability::RequireTLS => writer.write_all(b"REQUIRETLS"),
+            Capability::Burl => writer.write_all(b"BURL"),
+            Capability::SmtpUtf8 => writer.write_all(b"SMTPUTF8"),
+            Capability::Rrvs => writer.write_all(b"RRVS"),
+            Capability::RequireTls => writer.write_all(b"REQUIRETLS"),
             Capability::Other { keyword, params } => {
                 if let Some((tail, head)) = params.split_last() {
                     writer.write_all(keyword.as_bytes())?;
@@ -773,13 +773,13 @@ impl From<ReplyCode> for u16 {
 pub enum AuthMechanism {
     Plain,
     Login,
-    GSSAPI,
+    GssApi,
 
-    CramMD5,
-    CramSHA1,
-    ScramMD5,
-    DigestMD5,
-    NTLM,
+    CramMd5,
+    CramSha1,
+    ScramMd5,
+    DigestMd5,
+    Ntlm,
 
     Other(String),
 }
@@ -789,13 +789,13 @@ impl AuthMechanism {
         match self {
             AuthMechanism::Plain => writer.write_all(b"PLAIN"),
             AuthMechanism::Login => writer.write_all(b"LOGIN"),
-            AuthMechanism::GSSAPI => writer.write_all(b"GSSAPI"),
+            AuthMechanism::GssApi => writer.write_all(b"GSSAPI"),
 
-            AuthMechanism::CramMD5 => writer.write_all(b"CRAM-MD5"),
-            AuthMechanism::CramSHA1 => writer.write_all(b"CRAM-SHA1"),
-            AuthMechanism::ScramMD5 => writer.write_all(b"SCRAM-MD5"),
-            AuthMechanism::DigestMD5 => writer.write_all(b"DIGEST-MD5"),
-            AuthMechanism::NTLM => writer.write_all(b"NTLM"),
+            AuthMechanism::CramMd5 => writer.write_all(b"CRAM-MD5"),
+            AuthMechanism::CramSha1 => writer.write_all(b"CRAM-SHA1"),
+            AuthMechanism::ScramMd5 => writer.write_all(b"SCRAM-MD5"),
+            AuthMechanism::DigestMd5 => writer.write_all(b"DIGEST-MD5"),
+            AuthMechanism::Ntlm => writer.write_all(b"NTLM"),
 
             AuthMechanism::Other(other) => writer.write_all(other.as_bytes()),
         }
@@ -912,7 +912,7 @@ mod tests {
                 Response::Ehlo {
                     domain: "example.org".into(),
                     greet: Some("...".into()),
-                    capabilities: vec![Capability::StartTLS],
+                    capabilities: vec![Capability::StartTls],
                 },
                 b"250-example.org ...\r\n250 STARTTLS\r\n".as_ref(),
             ),
@@ -920,7 +920,7 @@ mod tests {
                 Response::Ehlo {
                     domain: "example.org".into(),
                     greet: Some("...".into()),
-                    capabilities: vec![Capability::StartTLS, Capability::Size(12345)],
+                    capabilities: vec![Capability::StartTls, Capability::Size(12345)],
                 },
                 b"250-example.org ...\r\n250-STARTTLS\r\n250 SIZE 12345\r\n".as_ref(),
             ),
