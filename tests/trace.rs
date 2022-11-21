@@ -1,14 +1,8 @@
-use instant_smtp::{
-    parse::{
-        command::command,
-        response::{ehlo_ok_rsp, Greeting, Reply_lines},
-    },
-    types::Command,
-};
+use instant_smtp::types::{Command, Response};
 use nom::FindSubstring;
 
 fn parse_trace(mut trace: &[u8]) {
-    let (rem, greeting) = Greeting(trace).unwrap();
+    let (rem, greeting) = Response::parse_greeting(trace).unwrap();
     println!("S: {:?}", greeting);
     trace = rem;
 
@@ -17,18 +11,18 @@ fn parse_trace(mut trace: &[u8]) {
             break;
         }
 
-        let (rem, cmd) = command(trace).unwrap();
+        let (rem, cmd) = Command::from_bytes(trace).unwrap();
         println!("C: {:?}", cmd);
         trace = rem;
 
         match cmd {
             Command::Ehlo { .. } => {
-                let (rem, rsp) = ehlo_ok_rsp(trace).unwrap();
+                let (rem, rsp) = Response::parse_ehlo(trace).unwrap();
                 println!("S: {:?}", rsp);
                 trace = rem;
             }
             Command::Data { .. } => {
-                let (rem, rsp) = Reply_lines(trace).unwrap();
+                let (rem, rsp) = Response::parse_other(trace).unwrap();
                 println!("S: {:?}", rsp);
                 trace = rem;
 
@@ -37,12 +31,12 @@ fn parse_trace(mut trace: &[u8]) {
                 println!("C (data): <{}>", std::str::from_utf8(data).unwrap());
                 trace = rem;
 
-                let (rem, rsp) = Reply_lines(trace).unwrap();
+                let (rem, rsp) = Response::parse_other(trace).unwrap();
                 println!("S: {:?}", rsp);
                 trace = rem;
             }
             _ => {
-                let (rem, rsp) = Reply_lines(trace).unwrap();
+                let (rem, rsp) = Response::parse_other(trace).unwrap();
                 println!("S: {:?}", rsp);
                 trace = rem;
             }
