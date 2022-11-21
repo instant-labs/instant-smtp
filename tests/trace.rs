@@ -1,11 +1,11 @@
-use nom::FindSubstring;
-use smtp_codec::{
+use instant_smtp::{
     parse::{
         command::command,
         response::{ehlo_ok_rsp, Greeting, Reply_lines},
     },
     types::Command,
 };
+use nom::FindSubstring;
 
 fn parse_trace(mut trace: &[u8]) {
     let (rem, greeting) = Greeting(trace).unwrap();
