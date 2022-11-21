@@ -3,7 +3,8 @@ use std::{borrow::Cow, fmt, io::Write, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{parse::response::is_text_string_byte, utils::escape_quoted};
+use crate::parse::escape_quoted;
+use crate::parse::response::is_text_string_byte;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
