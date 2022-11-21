@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt, io::Write, ops::Deref};
 
-#[cfg(feature = "serdex")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{parse::response::is_text_string_byte, utils::escape_quoted};
@@ -287,7 +287,7 @@ impl AtomOrQuoted {
 
 // -------------------------------------------------------------------------------------------------
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Response {
@@ -406,7 +406,7 @@ impl Response {
 
 // -------------------------------------------------------------------------------------------------
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Capability {
@@ -589,7 +589,7 @@ impl Capability {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum ReplyCode {
     /// 211 System status, or system help reply
@@ -747,7 +747,7 @@ impl From<ReplyCode> for u16 {
     }
 }
 
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AuthMechanism {
@@ -783,7 +783,7 @@ impl AuthMechanism {
 }
 
 /// A string containing of tab, space and printable ASCII characters
-#[cfg_attr(feature = "serdex", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TextString<'a>(pub(crate) Cow<'a, str>);
 

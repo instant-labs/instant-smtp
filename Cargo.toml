@@ -7,13 +7,7 @@ repository = "https://github.com/InstantDomain/instant-smtp"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 
-[features]
-default = []
-serdex  = ["serde"]
-
 [dependencies]
 nom = "7"
 abnf-core = "0.5"
-
-# Optional
 serde = { version = "1.0", features = ["derive"], optional = true }
