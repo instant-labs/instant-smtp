@@ -32,37 +32,37 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-        
+
       - name: Checkout code
         uses: actions/checkout@v2
-      
+
       - name: Build code
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --all --all-features
-      
+
       - name: Test code
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all --all-features
-          
+
   audit:
     needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    
+
     - name: Audit dependencies
       uses: EmbarkStudios/cargo-deny-action@v1
-      
+
   lint:
     needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -71,10 +71,10 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
-      
+
       - name: Checkout code
         uses: actions/checkout@v2
-      
+
       - name: Check code formatting
         uses: actions-rs/cargo@v1
         with:
