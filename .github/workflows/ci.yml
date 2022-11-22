@@ -79,8 +79,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check --config imports_granularity=Crate,group_imports=StdExternalCrate
-      
+          args: --all -- --check
+
       - name: Check for common mistakes and missed improvements
         uses: actions-rs/clippy-check@v1
         with:
